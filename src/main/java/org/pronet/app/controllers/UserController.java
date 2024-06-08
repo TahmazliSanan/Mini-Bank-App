@@ -1,9 +1,11 @@
 package org.pronet.app.controllers;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.pronet.app.payloads.*;
 import org.pronet.app.services.UserService;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "UserController")
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
