@@ -1,9 +1,6 @@
 package org.pronet.app.services;
 
-import org.pronet.app.payloads.BankResponse;
-import org.pronet.app.payloads.CreditDebitRequest;
-import org.pronet.app.payloads.EnquiryRequest;
-import org.pronet.app.payloads.UserRequest;
+import org.pronet.app.payloads.*;
 
 public interface UserService {
     BankResponse createAccount(UserRequest request);
@@ -11,4 +8,5 @@ public interface UserService {
     String nameEnquiry(EnquiryRequest request);
     BankResponse creditAccount(CreditDebitRequest request);
     BankResponse debitAccount(CreditDebitRequest request);
+    BankResponse transfer(TransferRequest request);
 }

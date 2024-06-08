@@ -55,7 +55,7 @@ public class UserServiceImpl implements UserService {
                 .textBody("Hi, dear! Your account created successfully!\n" +
                         "Account name: " + savedUser.getFirstName() + " " + savedUser.getLastName() + "\n" +
                         "Account number: " + savedUser.getAccountNumber() + "\n" +
-                        "Account balance: " + savedUser.getAccountBalance())
+                        "Account balance ($): " + savedUser.getAccountBalance())
                 .build();
 
         emailService.sendEmail(emailDetails);
@@ -125,7 +125,20 @@ public class UserServiceImpl implements UserService {
 
         User userToCredit = userRepository.findByAccountNumber(request.getAccountNumber());
         userToCredit.setAccountBalance(userToCredit.getAccountBalance().add(request.getAmount()));
-        userRepository.save(userToCredit);
+        User savedUserToCredit = userRepository.save(userToCredit);
+
+        EmailDetails emailDetails = EmailDetails
+                .builder()
+                .recipient(savedUserToCredit.getEmail())
+                .subject("Credit Process Status")
+                .textBody("Hi, dear! Your credit process is completed successfully!\n" +
+                        "Account name: " + savedUserToCredit.getFirstName() + " " +
+                        savedUserToCredit.getLastName() + "\n" +
+                        "Account number: " + savedUserToCredit.getAccountNumber() + "\n" +
+                        "Account balance ($): " + savedUserToCredit.getAccountBalance())
+                .build();
+
+        emailService.sendEmail(emailDetails);
 
         return BankResponse
                 .builder()
@@ -167,7 +180,20 @@ public class UserServiceImpl implements UserService {
         }
 
         userToDebit.setAccountBalance(userToDebit.getAccountBalance().subtract(request.getAmount()));
-        userRepository.save(userToDebit);
+        User savedUserToDebit = userRepository.save(userToDebit);
+
+        EmailDetails emailDetails = EmailDetails
+                .builder()
+                .recipient(savedUserToDebit.getEmail())
+                .subject("Debit Process Status")
+                .textBody("Hi, dear! Your debit process is completed successfully!\n" +
+                        "Account name: " + savedUserToDebit.getFirstName() + " " +
+                        savedUserToDebit.getLastName() + "\n" +
+                        "Account number: " + savedUserToDebit.getAccountNumber() + "\n" +
+                        "Account balance ($): " + savedUserToDebit.getAccountBalance())
+                .build();
+
+        emailService.sendEmail(emailDetails);
 
         return BankResponse
                 .builder()
@@ -179,6 +205,72 @@ public class UserServiceImpl implements UserService {
                         .accountNumber(request.getAccountNumber())
                         .accountBalance(userToDebit.getAccountBalance())
                         .build())
+                .build();
+    }
+
+    @Override
+    public BankResponse transfer(TransferRequest request) {
+        boolean isExistDestinationAccount = userRepository.existsByAccountNumber(request.getDestinationAccountNumber());
+        if (!isExistDestinationAccount) {
+            return BankResponse
+                    .builder()
+                    .responseCode(AccountUtil.ACCOUNT_NOT_EXIST_CODE)
+                    .responseMessage(AccountUtil.ACCOUNT_NOT_EXIST_MESSAGE)
+                    .accountDetails(null)
+                    .build();
+        }
+
+        User sourceAccountUser = userRepository.findByAccountNumber(request.getSourceAccountNumber());
+        User destinationAccountUser = userRepository.findByAccountNumber(request.getDestinationAccountNumber());
+
+        if (request.getAmount().compareTo(sourceAccountUser.getAccountBalance()) > 0) {
+            return BankResponse
+                    .builder()
+                    .responseCode(AccountUtil.INSUFFICIENT_BALANCE_CODE)
+                    .responseMessage(AccountUtil.INSUFFICIENT_BALANCE_MESSAGE)
+                    .accountDetails(null)
+                    .build();
+        }
+
+        sourceAccountUser.setAccountBalance(sourceAccountUser.getAccountBalance().subtract(request.getAmount()));
+        User savedSourceAccountUser = userRepository.save(sourceAccountUser);
+
+        EmailDetails emailDetailsForSourceAccountUser = EmailDetails
+                .builder()
+                .recipient(savedSourceAccountUser.getEmail())
+                .subject("Transfer Process Status")
+                .textBody("Hi, dear! Your transfer process is completed successfully!\n" +
+                        "Account name: " + savedSourceAccountUser.getFirstName() + " " +
+                        savedSourceAccountUser.getLastName() + "\n" +
+                        "Account number: " + savedSourceAccountUser.getAccountNumber() + "\n" +
+                        "Amount ($): " + request.getAmount() + "\n" +
+                        "Account balance ($): " + savedSourceAccountUser.getAccountBalance())
+                .build();
+
+        emailService.sendEmail(emailDetailsForSourceAccountUser);
+
+        destinationAccountUser.setAccountBalance(destinationAccountUser.getAccountBalance().add(request.getAmount()));
+        User savedDestinationAccountUser = userRepository.save(destinationAccountUser);
+
+        EmailDetails emailDetailsForDestinationAccountUser = EmailDetails
+                .builder()
+                .recipient(savedDestinationAccountUser.getEmail())
+                .subject("Transfer Process Status")
+                .textBody("Hi, dear! Your current account status after transfer process:\n" +
+                        "Account name: " + savedDestinationAccountUser.getFirstName() + " " +
+                        savedDestinationAccountUser.getLastName() + "\n" +
+                        "Account number: " + savedDestinationAccountUser.getAccountNumber() + "\n" +
+                        "Amount ($): " + request.getAmount() + "\n" +
+                        "Account balance ($): " + savedDestinationAccountUser.getAccountBalance())
+                .build();
+
+        emailService.sendEmail(emailDetailsForDestinationAccountUser);
+
+        return BankResponse
+                .builder()
+                .responseCode(AccountUtil.TRANSFER_SUCCESS_CODE)
+                .responseMessage(AccountUtil.TRANSFER_SUCCESS_MESSAGE)
+                .accountDetails(null)
                 .build();
     }
 }
