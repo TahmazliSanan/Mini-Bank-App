@@ -3,8 +3,10 @@ package org.pronet.app.services.implementations;
 import org.pronet.app.entities.User;
 import org.pronet.app.payloads.AccountDetails;
 import org.pronet.app.payloads.BankResponse;
+import org.pronet.app.payloads.EmailDetails;
 import org.pronet.app.payloads.UserRequest;
 import org.pronet.app.repositories.UserRepository;
+import org.pronet.app.services.EmailService;
 import org.pronet.app.services.UserService;
 import org.pronet.app.utils.AccountUtil;
 import org.springframework.stereotype.Service;
@@ -14,9 +16,11 @@ import java.math.BigDecimal;
 @Service
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, EmailService emailService) {
         this.userRepository = userRepository;
+        this.emailService = emailService;
     }
 
     @Override
@@ -45,6 +49,19 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         User savedUser = userRepository.save(newUser);
+
+        EmailDetails emailDetails = EmailDetails
+                .builder()
+                .recipient(savedUser.getEmail())
+                .subject("Account Creation Confirmation")
+                .textBody("Hi, dear! Your account created successfully!\n" +
+                        "Account name: " + savedUser.getFirstName() + " " + savedUser.getLastName() + "\n" +
+                        "Account number: " + savedUser.getAccountNumber() + "\n" +
+                        "Account balance: " + savedUser.getAccountBalance())
+                .build();
+
+        emailService.sendEmail(emailDetails);
+
         return BankResponse
                 .builder()
                 .responseCode(AccountUtil.ACCOUNT_CREATION_SUCCESS_CODE)
