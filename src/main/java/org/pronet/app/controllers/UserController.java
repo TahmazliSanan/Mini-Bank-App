@@ -1,9 +1,6 @@
 package org.pronet.app.controllers;
 
-import org.pronet.app.payloads.BankResponse;
-import org.pronet.app.payloads.CreditDebitRequest;
-import org.pronet.app.payloads.EnquiryRequest;
-import org.pronet.app.payloads.UserRequest;
+import org.pronet.app.payloads.*;
 import org.pronet.app.services.UserService;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,5 +36,10 @@ public class UserController {
     @PostMapping("/debit")
     public BankResponse processDebit(@RequestBody CreditDebitRequest request) {
         return userService.debitAccount(request);
+    }
+
+    @PostMapping("/transfer")
+    public BankResponse processTransfer(@RequestBody TransferRequest request) {
+        return userService.transfer(request);
     }
 }
