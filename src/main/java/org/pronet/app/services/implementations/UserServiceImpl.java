@@ -4,6 +4,7 @@ import org.pronet.app.entities.User;
 import org.pronet.app.payloads.*;
 import org.pronet.app.repositories.UserRepository;
 import org.pronet.app.services.EmailService;
+import org.pronet.app.services.TransactionService;
 import org.pronet.app.services.UserService;
 import org.pronet.app.utils.AccountUtil;
 import org.springframework.stereotype.Service;
@@ -15,10 +16,13 @@ import java.math.BigInteger;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final TransactionService transactionService;
 
-    public UserServiceImpl(UserRepository userRepository, EmailService emailService) {
+    public UserServiceImpl(UserRepository userRepository, EmailService emailService,
+                           TransactionService transactionService) {
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.transactionService = transactionService;
     }
 
     @Override
@@ -127,6 +131,15 @@ public class UserServiceImpl implements UserService {
         userToCredit.setAccountBalance(userToCredit.getAccountBalance().add(request.getAmount()));
         User savedUserToCredit = userRepository.save(userToCredit);
 
+        TransactionDto transactionDto = TransactionDto
+                .builder()
+                .accountNumber(userToCredit.getAccountNumber())
+                .amount(request.getAmount())
+                .type("Credit")
+                .build();
+
+        transactionService.saveTransaction(transactionDto);
+
         EmailDetails emailDetails = EmailDetails
                 .builder()
                 .recipient(savedUserToCredit.getEmail())
@@ -181,6 +194,15 @@ public class UserServiceImpl implements UserService {
 
         userToDebit.setAccountBalance(userToDebit.getAccountBalance().subtract(request.getAmount()));
         User savedUserToDebit = userRepository.save(userToDebit);
+
+        TransactionDto transactionDto = TransactionDto
+                .builder()
+                .accountNumber(userToDebit.getAccountNumber())
+                .amount(request.getAmount())
+                .type("Debit")
+                .build();
+
+        transactionService.saveTransaction(transactionDto);
 
         EmailDetails emailDetails = EmailDetails
                 .builder()
@@ -251,6 +273,15 @@ public class UserServiceImpl implements UserService {
 
         destinationAccountUser.setAccountBalance(destinationAccountUser.getAccountBalance().add(request.getAmount()));
         User savedDestinationAccountUser = userRepository.save(destinationAccountUser);
+
+        TransactionDto transactionDto = TransactionDto
+                .builder()
+                .accountNumber(destinationAccountUser.getAccountNumber())
+                .amount(request.getAmount())
+                .type("Transfer")
+                .build();
+
+        transactionService.saveTransaction(transactionDto);
 
         EmailDetails emailDetailsForDestinationAccountUser = EmailDetails
                 .builder()
