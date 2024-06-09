@@ -2,8 +2,11 @@ package org.pronet.app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Builder
@@ -20,4 +23,8 @@ public class Transaction {
     private String accountNumber;
     private BigDecimal amount;
     private String status;
+    @CreationTimestamp
+    private LocalDate createdAt;
+    @UpdateTimestamp
+    private LocalDate updatedAt;
 }
