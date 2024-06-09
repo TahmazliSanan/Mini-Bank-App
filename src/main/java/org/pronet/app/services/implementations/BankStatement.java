@@ -6,8 +6,10 @@ import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import org.pronet.app.entities.Transaction;
 import org.pronet.app.entities.User;
+import org.pronet.app.payloads.EmailDetails;
 import org.pronet.app.repositories.TransactionRepository;
 import org.pronet.app.repositories.UserRepository;
+import org.pronet.app.services.EmailService;
 import org.springframework.stereotype.Service;
 
 import java.io.FileNotFoundException;
@@ -21,11 +23,13 @@ import java.util.List;
 public class BankStatement {
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
-    private static final String FILE = "C:\\Users\\user\\Downloads\\FlexBank - My Statement.pdf";
+    private final EmailService emailService;
+    private static final String FILE = "C:\\Users\\user\\Documents\\FlexBank - My Statement.pdf";
 
-    public BankStatement(UserRepository userRepository, TransactionRepository transactionRepository) {
+    public BankStatement(UserRepository userRepository, TransactionRepository transactionRepository, EmailService emailService) {
         this.userRepository = userRepository;
         this.transactionRepository = transactionRepository;
+        this.emailService = emailService;
     }
 
     public List<Transaction> generateStatement(String accountNumber, String startDate, String endDate)
@@ -121,6 +125,16 @@ public class BankStatement {
         document.add(transactionTable);
 
         document.close();
+
+        EmailDetails emailDetails = EmailDetails
+                .builder()
+                .recipient(user.getEmail())
+                .subject("Statement Of Account")
+                .textBody("This file (as PDF) is your statement of account!")
+                .attachment(FILE)
+                .build();
+
+        emailService.sendEmailWithAttachment(emailDetails);
 
         return transactionList;
     }
