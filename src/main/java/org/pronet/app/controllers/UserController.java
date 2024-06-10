@@ -20,6 +20,11 @@ public class UserController {
         return userService.createAccount(request);
     }
 
+    @PostMapping("/login-account")
+    public BankResponse loginAccount(@RequestBody LoginDto dto) {
+        return userService.loginAccount(dto);
+    }
+
     @GetMapping("/balance-enquiry")
     public BankResponse getBalanceEnquiry(@RequestBody EnquiryRequest request) {
         return userService.balanceEnquiry(request);
