@@ -7,6 +7,7 @@ import org.pronet.app.services.EmailService;
 import org.pronet.app.services.TransactionService;
 import org.pronet.app.services.UserService;
 import org.pronet.app.utils.AccountUtil;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -17,12 +18,16 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final TransactionService transactionService;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, EmailService emailService,
-                           TransactionService transactionService) {
+    public UserServiceImpl(UserRepository userRepository,
+                           EmailService emailService,
+                           TransactionService transactionService,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.emailService = emailService;
         this.transactionService = transactionService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -42,6 +47,7 @@ public class UserServiceImpl implements UserService {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .phoneNumber(request.getPhoneNumber())
                 .gender(request.getGender())
                 .address(request.getAddress())
