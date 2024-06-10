@@ -1,12 +1,17 @@
 package org.pronet.app.services.implementations;
 
+import org.pronet.app.configs.JwtTokenProvider;
 import org.pronet.app.entities.User;
+import org.pronet.app.enums.Role;
 import org.pronet.app.payloads.*;
 import org.pronet.app.repositories.UserRepository;
 import org.pronet.app.services.EmailService;
 import org.pronet.app.services.TransactionService;
 import org.pronet.app.services.UserService;
 import org.pronet.app.utils.AccountUtil;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,15 +24,21 @@ public class UserServiceImpl implements UserService {
     private final EmailService emailService;
     private final TransactionService transactionService;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider jwtTokenProvider;
 
     public UserServiceImpl(UserRepository userRepository,
                            EmailService emailService,
                            TransactionService transactionService,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           AuthenticationManager authenticationManager,
+                           JwtTokenProvider jwtTokenProvider) {
         this.userRepository = userRepository;
         this.emailService = emailService;
         this.transactionService = transactionService;
         this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @Override
@@ -54,6 +65,7 @@ public class UserServiceImpl implements UserService {
                 .accountNumber(AccountUtil.generateAccountNumber())
                 .accountBalance(BigDecimal.ZERO)
                 .status("Active")
+                .role(Role.valueOf(Role.ADMIN.toString()))
                 .build();
 
         User savedUser = userRepository.save(newUser);
@@ -80,6 +92,29 @@ public class UserServiceImpl implements UserService {
                         .accountNumber(savedUser.getAccountNumber())
                         .accountBalance(savedUser.getAccountBalance())
                         .build())
+                .build();
+    }
+
+    @Override
+    public BankResponse loginAccount(LoginDto dto) {
+        Authentication authentication = null;
+        authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword())
+        );
+
+        EmailDetails emailDetails = EmailDetails
+                .builder()
+                .recipient(dto.getEmail())
+                .subject("Login Account Status")
+                .textBody("You logged in account successfully! If you are not please contact with bank!")
+                .build();
+
+        emailService.sendEmail(emailDetails);
+
+        return BankResponse
+                .builder()
+                .responseCode(AccountUtil.LOGIN_SUCCESS_CODE)
+                .responseMessage(jwtTokenProvider.generateToken(authentication))
                 .build();
     }
 
